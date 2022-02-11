@@ -62,11 +62,14 @@ const inputLoanAmount = document.querySelector('.form__input--loan-amount');
 const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 
+let currentAccount = {};
 
+// Changes login message to owner greeting message
 const displayUIMessages = function (owner, greeting="Welcome"){
   labelWelcome.textContent = `${greeting}, ${owner}`;
 };
 
+// Creates a new element of movement
 const createMovementElementCode = function(movement, index) {
 
   const depositOrWithdrawal = movement < 0 ? "withdrawal" : "deposit";
@@ -80,16 +83,18 @@ const createMovementElementCode = function(movement, index) {
   return code;
 };
 
-const displayMovements = function(movements) {
+// Displays movements
+const displayMovements = function(currentAccount) {
 
   containerMovements.innerHTML = "";
 
-  movements.forEach(function(movement, index){
+  currentAccount.movements.forEach(function(movement, index){
     containerMovements.insertAdjacentHTML('afterbegin', createMovementElementCode(movement, index));
   });
 
 };
 
+// Creates username from account owners names first letters
 const createUsernames = function(accounts){
   accounts.forEach(
     account=>{
@@ -102,20 +107,33 @@ const createUsernames = function(accounts){
   )
 };
 
-const calcPrintBalance = function(movements){
-  const accBalance = movements.reduce((acc, movement)=>acc+movement, 0);
+// Checks user balance
+const checkAccountBalance = function (currentAccount){
+  return currentAccount.movements.reduce((acc, movement)=>acc+movement, 0);
+};
+
+// Prints account balance to UI
+const calcPrintBalance = function(currentAccount){
+  const accBalance = checkAccountBalance(currentAccount);
   labelBalance.textContent = `${accBalance} EUR`;
 };
 
-const calcDisplaySummary = function(movements, interest) {
+// Displays account summary to ui
+const calcDisplaySummary = function(currentAccount) {
   
-  const deposits = movements.filter(movement => movement > 0);
-  const withdrawal = movements.filter(movement => movement< 0);
+  const deposits = currentAccount.movements.filter(movement => movement > 0);
+  const withdrawal = currentAccount.movements.filter(movement => movement< 0);
 
   labelSumIn.textContent = `${deposits.reduce((acc, curr)=>acc+curr)}€`;
   labelSumOut.textContent = `${Math.abs(withdrawal.reduce((acc, curr)=>acc+curr))}€`;
 
-  labelSumInterest.textContent = `${deposits.reduce((sum, deposit) => sum + (deposit * interest/100), 0)}€`;
+  labelSumInterest.textContent = `${deposits.reduce((sum, deposit) => sum + (deposit * currentAccount.interestRate/100), 0)}€`;
+};
+
+const UpdateUI = function(currentAccount) {
+  displayMovements(currentAccount);
+  calcDisplaySummary(currentAccount);
+  calcPrintBalance(currentAccount);
 };
 
 // Event handlers
@@ -134,11 +152,48 @@ btnLogin.addEventListener('click', function(event) {
   );
 
   if (user){
+    
+    inputLoginPin.value = ""
+    currentAccount = user;
+
     containerApp.style.opacity = "1.0";
+    
     displayUIMessages(user.owner.split(' ')[0], "Welcome")
-    displayMovements(user.movements);
-    calcDisplaySummary(user.movements, user.interestRate);
-    calcPrintBalance(user.movements);
+
+    UpdateUI(currentAccount);
+  }
+
+});
+
+btnTransfer.addEventListener('click', function(event) {
+  
+  event.preventDefault();
+
+  const transferAmount = Number(inputTransferAmount.value);
+  const transferTo = inputTransferTo.value;
+
+  const recipient = accounts.find(acc=>acc.username === transferTo);
+
+  if (
+    transferAmount > 0 && 
+    transferAmount <= checkAccountBalance(currentAccount) &&
+    transferTo !== currentAccount.username ){
+      
+      if (recipient?.username){
+        recipient.movements.push(transferAmount);
+        currentAccount.movements.push(-transferAmount);
+        
+        inputTransferAmount.value = "";
+        inputTransferTo.value = "";
+        
+        UpdateUI(currentAccount);
+
+      } else{
+        alert("Can't transfer, Recipient doesn't exists.");
+      }
+
+  } else if (transferAmount <= 0){
+    alert("Transfer amount can't be less than or equal to 0");
   }
 
 });
