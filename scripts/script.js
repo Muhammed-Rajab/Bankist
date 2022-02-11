@@ -185,7 +185,7 @@ btnTransfer.addEventListener('click', function(event) {
         
         inputTransferAmount.value = "";
         inputTransferTo.value = "";
-        
+
         UpdateUI(currentAccount);
 
       } else{
@@ -196,4 +196,27 @@ btnTransfer.addEventListener('click', function(event) {
     alert("Transfer amount can't be less than or equal to 0");
   }
 
+});
+
+btnClose.addEventListener("click", function(e) {
+  
+  e.preventDefault();
+  
+  
+  const closeUsername = inputCloseUsername.value;
+  const closePin = Number(inputClosePin.value)
+
+  if  (currentAccount.username === closeUsername&&
+    currentAccount.pin === closePin){
+      
+      const currentUserIndex = accounts.findIndex(acc => acc.username === currentAccount.username);
+      accounts.splice(accounts[currentUserIndex], 1);
+      
+      displayUIMessages(currentAccount.owner.split(' ')[0], "Good bye");
+      containerApp.style.opacity = "0.0";
+
+      inputCloseUsername.value = inputClosePin.value = "";
+  }
+  
+  
 });
