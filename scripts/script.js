@@ -63,6 +63,7 @@ const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 
 let currentAccount = {};
+let sort = true;
 
 // Changes login message to owner greeting message
 const displayUIMessages = function (owner, greeting="Welcome"){
@@ -84,11 +85,14 @@ const createMovementElementCode = function(movement, index) {
 };
 
 // Displays movements
-const displayMovements = function(currentAccount) {
+const displayMovements = function(currentAccount, sort=false) {
 
   containerMovements.innerHTML = "";
 
-  currentAccount.movements.forEach(function(movement, index){
+  const movs = sort ? currentAccount.movements.slice().sort((a, b) => a - b)
+  : currentAccount.movements
+
+  movs.forEach(function(movement, index){
     containerMovements.insertAdjacentHTML('afterbegin', createMovementElementCode(movement, index));
   });
 
@@ -198,6 +202,33 @@ btnTransfer.addEventListener('click', function(event) {
 
 });
 
+btnLoan.addEventListener('click', function(e) {
+  e.preventDefault();
+  /*
+    only grants a loan
+    if there at least one deposit
+    with at least 10% of the requested loan amount.
+  */
+  
+  const loanAmount = Number(inputLoanAmount.value);
+
+  if(loanAmount <= 0) return;
+
+  if (currentAccount.movements.some(movement => movement >= loanAmount*0.1)){
+    alert("Load approved!!")
+    currentAccount.movements.push(loanAmount);
+    UpdateUI(currentAccount);
+  };
+
+  inputLoanAmount.value = ""
+});
+
+btnSort.addEventListener("click", function(e) {
+  e.preventDefault();
+  
+  displayMovements(currentAccount, sort); sort = !sort;
+});
+
 btnClose.addEventListener("click", function(e) {
   
   e.preventDefault();
@@ -217,6 +248,4 @@ btnClose.addEventListener("click", function(e) {
 
       inputCloseUsername.value = inputClosePin.value = "";
   }
-  
-  
 });
