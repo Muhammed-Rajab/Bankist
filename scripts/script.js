@@ -83,14 +83,38 @@ const displayUIMessages = function (owner, greeting="Welcome"){
 };
 
 // Creates a new element of movement
-const createMovementElementCode = function(movement, index) {
+const createMovementElementCode = function(movement, index, date, locale='en-US') {
+
+  const formatter = new Intl.NumberFormat(currentAccount.locale, {currency:currentAccount.currency, style: 'currency'});
 
   const depositOrWithdrawal = movement < 0 ? "withdrawal" : "deposit";
 
+  const now = new Date();
+  const dateObj = new Date(date);
+
+  const difference = Math.round(Math.abs(+now - +dateObj) / (60*60*24*1000)) || 0;
+  let dateString = ""
+
+  switch(difference){
+    case 0:
+      dateString = "Today";
+      break;
+    case 1:
+      dateString = "Yesterday";
+      break;
+    default:
+      dateString = new Intl.DateTimeFormat(locale).format(now);
+      break;
+  }
+
+  if (difference <= 7  && difference >= 2){
+    dateString = `${difference} day${difference > 1?'s':""} ago`  
+  }
+
   const code = `<div class="movements__row">
     <div class="movements__type movements__type--${depositOrWithdrawal}">${index+1} ${depositOrWithdrawal}</div>
-    <div class="movements__date">3 days ago</div>
-    <div class="movements__value">${movement.toFixed(2)} €</div>
+    <div class="movements__date">${dateString}</div>
+    <div class="movements__value">${formatter.format(movement.toFixed(2))} €</div>
   </div>`
 
   return code;
@@ -105,7 +129,7 @@ const displayMovements = function(currentAccount, sort=false) {
   : currentAccount.movements
 
   movs.forEach(function(movement, index){
-    containerMovements.insertAdjacentHTML('afterbegin', createMovementElementCode(movement, index));
+    containerMovements.insertAdjacentHTML('afterbegin', createMovementElementCode(movement, index, currentAccount.movementsDates[index]), currentAccount.locale);
   });
 
 };
@@ -130,20 +154,23 @@ const checkAccountBalance = function (currentAccount){
 
 // Prints account balance to UI
 const calcPrintBalance = function(currentAccount){
-  const accBalance = checkAccountBalance(currentAccount).toFixed(2);
-  labelBalance.textContent = `${accBalance} EUR`;
+  const formatter = new Intl.NumberFormat(currentAccount.locale, {currency:currentAccount.currency, style: 'currency'});
+  const accBalance = formatter.format(checkAccountBalance(currentAccount).toFixed(2));
+  labelBalance.textContent = `${accBalance}`;
 };
 
 // Displays account summary to ui
 const calcDisplaySummary = function(currentAccount) {
   
+  const formatter = new Intl.NumberFormat(currentAccount.locale, {currency:currentAccount.currency, style: 'currency'});
+
   const deposits = currentAccount.movements.filter(movement => movement > 0);
   const withdrawal = currentAccount.movements.filter(movement => movement< 0);
 
-  labelSumIn.textContent = `${deposits.reduce((acc, curr)=>acc+curr).toFixed(2)}€`;
-  labelSumOut.textContent = `${Math.abs(withdrawal.reduce((acc, curr)=>acc+curr).toFixed(2))}€`;
+  labelSumIn.textContent = `${formatter.format(deposits.reduce((acc, curr)=>acc+curr).toFixed(2))}`;
+  labelSumOut.textContent = `${formatter.format(Math.abs(withdrawal.reduce((acc, curr)=>acc+curr).toFixed(2)))}`;
 
-  labelSumInterest.textContent = `${deposits.reduce((sum, deposit) => sum + (deposit * currentAccount.interestRate/100), 0).toFixed(2)}€`;
+  labelSumInterest.textContent = `${formatter.format(deposits.reduce((sum, deposit) => sum + (deposit * currentAccount.interestRate/100), 0).toFixed(2)  )}`;
 };
 
 const UpdateUI = function(currentAccount) {
@@ -155,6 +182,10 @@ const UpdateUI = function(currentAccount) {
 // Event handlers
 
 createUsernames(accounts);
+
+currentAccount = account1;
+UpdateUI(currentAccount);
+containerApp.style.opacity = "1.0";
 
 btnLogin.addEventListener('click', function(event) {
   
@@ -177,6 +208,17 @@ btnLogin.addEventListener('click', function(event) {
     displayUIMessages(user.owner.split(' ')[0], "Welcome")
 
     UpdateUI(currentAccount);
+
+    const options = {
+      day: 'numeric',
+      weekday: 'long',
+      month: 'long',
+      year: '2-digit',
+      hour: 'numeric',
+      minute: 'numeric',
+    };
+    const  currDate = new Date();
+    labelDate.textContent = new Intl.DateTimeFormat(user.locale, options).format(currDate);
   }
 
 });
