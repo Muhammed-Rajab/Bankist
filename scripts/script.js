@@ -76,6 +76,7 @@ const inputClosePin = document.querySelector('.form__input--pin');
 
 let currentAccount = {};
 let sort = true;
+let timer;
 
 // Changes login message to owner greeting message
 const displayUIMessages = function (owner, greeting="Welcome"){
@@ -187,6 +188,35 @@ currentAccount = account1;
 UpdateUI(currentAccount);
 containerApp.style.opacity = "1.0";
 
+// -------------------------------------------------
+
+const  startLogoutTimer = function() {
+  
+  if (timer){
+    clearInterval(timer);
+  }
+
+  let time = 5*60;
+  const tick = ()=>{
+
+    const  min = String(Math.trunc(time/60)).padStart(2, 0);
+    const sec = String(time % 60).padStart(2, 0);
+
+    labelTimer.textContent = `${min}:${sec}`;
+
+    if (min === 0 && sec === 0){
+      clearInterval(interval);
+      containerApp.style.opacity = "0.0";
+      currentAccount = {};
+    }
+
+    time--;
+
+  };tick();
+
+  const interval = setInterval(tick, 1000);
+  return interval;
+};
 btnLogin.addEventListener('click', function(event) {
   
   event.preventDefault();
@@ -199,7 +229,7 @@ btnLogin.addEventListener('click', function(event) {
   );
 
   if (user){
-    
+
     inputLoginPin.value = ""
     currentAccount = user;
 
@@ -219,6 +249,8 @@ btnLogin.addEventListener('click', function(event) {
     };
     const  currDate = new Date();
     labelDate.textContent = new Intl.DateTimeFormat(user.locale, options).format(currDate);
+
+    timer = startLogoutTimer();
   }
 
 });
@@ -226,6 +258,7 @@ btnLogin.addEventListener('click', function(event) {
 btnTransfer.addEventListener('click', function(event) {
   
   event.preventDefault();
+
 
   const transferAmount = Number(inputTransferAmount.value);
   const transferTo = inputTransferTo.value;
@@ -245,6 +278,7 @@ btnTransfer.addEventListener('click', function(event) {
         inputTransferTo.value = "";
 
         UpdateUI(currentAccount);
+        timer = startLogoutTimer();
 
       } else{
         alert("Can't transfer, Recipient doesn't exists.");
@@ -272,6 +306,8 @@ btnLoan.addEventListener('click', function(e) {
     alert("Load approved!!")
     currentAccount.movements.push(loanAmount);
     UpdateUI(currentAccount);
+    timer = startLogoutTimer();
+
   };
 
   inputLoanAmount.value = ""
